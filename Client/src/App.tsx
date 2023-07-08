@@ -34,6 +34,8 @@ const ApolloProviderWrapper: React.FC<ApolloProviderWrapperProps> = ({
 }) => {
   return <ApolloProvider client={client}>{children}</ApolloProvider>
 }
+
+export const tenant = '940e8edf-edd9-401d-a21a-10f866fbdb3f'
 const App: React.FC = () => {
   return (
     <ApolloProviderWrapper>
