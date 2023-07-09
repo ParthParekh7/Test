@@ -1,19 +1,12 @@
 export interface LocationWriteInput {
-  address?: string
-  alias?: string
-  description?: string
-  id?: string
-  managingOrganization?: string
+  address: string
+  alias: string
+  description: string
   name: string
-  npi?: string
-  partOf?: string
-  status?: string
-  tag?: string
-  taxId?: string
-  telecom?: LocationTelecomInput[]
+  npi: string
+  taxId: string
   tenant: string
-  type?: string
-  updatedAt?: number
+  type: string
 }
 
 export interface LocationTelecomInput {

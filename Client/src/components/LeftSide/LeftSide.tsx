@@ -1,69 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { useMutation, NetworkStatus, useLazyQuery } from '@apollo/client'
-import { useNavigate } from 'react-router-dom'
-import {
-  CreateLocationVariables,
-  LocationCreateResponse
-} from '../../types/locationCreate/types'
-import { tenant } from '../../App'
-import { Location } from '../../types/locationRead/types'
-import { GET_LOCATIONS } from '../../GraphQL/queries'
-import { CREATE_LOCATION } from '../../GraphQL/mutation'
+import { NetworkStatus } from '@apollo/client'
+import moment from 'moment'
+import { useLeftSideContainer } from './container'
 
 const LeftSide: React.FC = () => {
-  const [, /*refresh*/ setRefresh] = React.useState(0)
-  const [search, setSearch] = React.useState('')
-  const navigate = useNavigate()
-
-  const [getLocation, { loading, error, data, refetch, networkStatus }] =
-    useLazyQuery(GET_LOCATIONS, { notifyOnNetworkStatusChange: true })
-  const [locations, setLocations] = useState<Location[]>([])
-  const [
-    createLocation,
-    { error: errorCreate, data: createData, loading: loadingCreate }
-  ] = useMutation<LocationCreateResponse, CreateLocationVariables>(
-    CREATE_LOCATION
-  )
-
-  useEffect(() => {
-    ;(async () => {
-      await getLocation({
-        variables: {
-          tenant: tenant,
-          search: search
-        }
-      })
-    })()
-  }, [search])
-
-  useEffect(() => {
-    if (data) {
-      setLocations(data.locationList.resources)
-    }
-  }, [data])
-
-  const handleCreateLocation = async () => {
-    await createLocation({
-      variables: {
-        requestBody: {
-          // Provide the necessary properties for creating a location
-          name: 'New Location',
-          tenant: tenant
-          // Other properties as required
-        },
-        tenant: tenant
-      }
-    })
-  }
-
-  const handleRefresh = () => {
-    refetch({ tenant: tenant, search: '' })
-    setRefresh((prev) => prev + 1)
-  }
-
-  const handleNavigate = (location: Location) => {
-    navigate(location.id, { state: location.name })
-  }
+  const {
+    state: { data, loading, error, locations, networkStatus, search, pathname },
+    actions: { handleNavigate, handleRefresh, setSearch }
+  } = useLeftSideContainer()
 
   if (error) return <p>Error: {error.message}</p>
   return (
@@ -82,13 +25,17 @@ const LeftSide: React.FC = () => {
             Refresh
           </button>
           <div className="">Location</div>
-          <button
-            type="button"
-            onClick={handleCreateLocation}
-            className="my-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Add
-          </button>
+          <div className="">
+            {pathname === '/add-new-location' ? null : (
+              <button
+                type="button"
+                onClick={() => handleNavigate('/add-new-location')}
+                className="my-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Add
+              </button>
+            )}
+          </div>
         </div>
 
         <form>
@@ -138,9 +85,11 @@ const LeftSide: React.FC = () => {
             <div
               key={location.id}
               className="max-w-sm rounded overflow-hidden shadow-lg p-2 cursor-pointer"
-              onClick={() => handleNavigate(location)}
+              onClick={() => handleNavigate(`/${location.id}`)}
             >
-              {data.locationList.resources.length === 0 && <p>No data found</p>}
+              {data && data.locationList.resources.length === 0 && (
+                <p>No data found</p>
+              )}
 
               <div className="flex justify-between">
                 <div className="px-2 py-4">
@@ -152,10 +101,9 @@ const LeftSide: React.FC = () => {
                   <span className="text-black bg-orange-400 p-1 rounded">
                     {location.status}
                   </span>
+                  <div>{moment(location.updated).fromNow()}</div>
                 </div>
               </div>
-
-              {/* Render other fields of the Location type as needed */}
             </div>
           ))}
       </div>

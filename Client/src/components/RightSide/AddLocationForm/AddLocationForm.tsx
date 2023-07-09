@@ -1,38 +1,28 @@
-import { NetworkStatus } from '@apollo/client'
+import { useAddLocationFormContainer } from './container'
 
-import { useRightSideContainer } from './container'
-
-const RightSide: React.FC = () => {
+const AddLocationForm: React.FC = () => {
   const {
-    state: { error, errorMsg, loading, location, networkStatus, successMsg },
-    actions: { handleDelete, handleFieldChange, register }
-  } = useRightSideContainer()
-
+    state: { errorMsg, loading, successMsg, errors },
+    actions: { handleAdd, register }
+  } = useAddLocationFormContainer()
   return (
     <div className="md:w-2/3 h-full relative">
       <div className="p-3 h-20 flex justify-between items-center bg-green-100">
         <div>
-          {!loading && (
-            <span className="ml-3 font-bold text-lg">{location?.name}</span>
-          )}
+          <span className="ml-3 font-bold text-lg">Create New location</span>
         </div>
         <div className="">
           <button
             type="button"
-            onClick={handleDelete}
-            className="ml-3 my-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            onClick={handleAdd}
+            className="ml-3 my-2 bg-green-700 hover:bg-green-900 text-white font-bold py-2 px-4 rounded"
           >
-            Delete
+            Add
           </button>
         </div>
       </div>
       <form className="w-full p-3">
-        {networkStatus === NetworkStatus.refetch && loading && (
-          <p className="my-2">Refetching!</p>
-        )}
-        {loading && networkStatus !== NetworkStatus.refetch && (
-          <p>Loading...</p>
-        )}
+        {loading && <p>Loading...</p>}
 
         {!!successMsg && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -59,14 +49,21 @@ const RightSide: React.FC = () => {
                 type="text"
                 id="name"
                 {...register('name')}
-                onBlur={(e) => handleFieldChange('name', e.target.value)}
-                className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4`}
+                className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4 ${
+                  errors.name ? 'border-red-500' : ''
+                }`}
               />
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
+
             <div className="flex flex-col">
               <label
                 htmlFor="address"
-                className=" text-gray-700 text-sm font-bold mb-2 w-1/4"
+                className="text-gray-700 text-sm font-bold mb-2 w-1/4"
               >
                 Address
               </label>
@@ -74,15 +71,43 @@ const RightSide: React.FC = () => {
                 type="text"
                 id="address"
                 {...register('address')}
-                onBlur={(e) => handleFieldChange('address', e.target.value)}
-                className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4`}
+                className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4 ${
+                  errors.address ? 'border-red-500' : ''
+                }`}
               />
+              {errors.address && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.address.message}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="tenant"
+                className="text-gray-700 text-sm font-bold mb-2 w-1/4"
+              >
+                Tenant
+              </label>
+              <input
+                type="text"
+                id="tenant"
+                disabled={true}
+                {...register('tenant')}
+                className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4 ${
+                  errors.tenant ? 'border-red-500' : ''
+                }`}
+              />
+              {errors.tenant && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.tenant.message}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col">
               <label
                 htmlFor="alias"
-                className=" text-gray-700 text-sm font-bold mb-2 w-1/4"
+                className="text-gray-700 text-sm font-bold mb-2 w-1/4"
               >
                 Alias
               </label>
@@ -90,7 +115,6 @@ const RightSide: React.FC = () => {
                 type="text"
                 id="alias"
                 {...register('alias')}
-                onBlur={(e) => handleFieldChange('alias', e.target.value)}
                 className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4`}
               />
             </div>
@@ -98,7 +122,7 @@ const RightSide: React.FC = () => {
             <div className="flex flex-col">
               <label
                 htmlFor="description"
-                className=" text-gray-700 text-sm font-bold mb-2 w-1/4"
+                className="text-gray-700 text-sm font-bold mb-2 w-1/4"
               >
                 Description
               </label>
@@ -106,7 +130,6 @@ const RightSide: React.FC = () => {
                 type="text"
                 id="description"
                 {...register('description')}
-                onBlur={(e) => handleFieldChange('description', e.target.value)}
                 className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4`}
               />
             </div>
@@ -122,7 +145,6 @@ const RightSide: React.FC = () => {
                 type="text"
                 id="npi"
                 {...register('npi')}
-                onBlur={(e) => handleFieldChange('npi', e.target.value)}
                 className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4`}
               />
             </div>
@@ -138,7 +160,20 @@ const RightSide: React.FC = () => {
                 type="text"
                 id="taxId"
                 {...register('taxId')}
-                onBlur={(e) => handleFieldChange('taxId', e.target.value)}
+                className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4`}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="type"
+                className="text-gray-700 text-sm font-bold mb-2 w-1/4"
+              >
+                Type
+              </label>
+              <input
+                type="text"
+                id="type"
+                {...register('type')}
                 className={`shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-3/4`}
               />
             </div>
@@ -148,4 +183,5 @@ const RightSide: React.FC = () => {
     </div>
   )
 }
-export default RightSide
+
+export default AddLocationForm
