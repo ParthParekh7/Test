@@ -1,11 +1,29 @@
 import { NetworkStatus } from '@apollo/client'
 import moment from 'moment'
+import { GetLocationsData } from '../../types/locationGet/types'
 import { useLeftSideContainer } from './container'
 
 const LeftSide: React.FC = () => {
   const {
-    state: { data, loading, error, locations, networkStatus, search, pathname },
-    actions: { handleNavigate, handleRefresh, setSearch }
+    state: {
+      data,
+      loading,
+      error,
+      locations,
+      networkStatus,
+      search,
+      pathname,
+      currentPage,
+      limit,
+      totalPages
+    },
+    actions: {
+      handleNavigate,
+      handleRefresh,
+      setSearch,
+      handlePageChange,
+      setLimit
+    }
   } = useLeftSideContainer()
 
   if (error) return <p>Error: {error.message}</p>
@@ -84,7 +102,7 @@ const LeftSide: React.FC = () => {
           locations.map((location: any) => (
             <div
               key={location.id}
-              className="max-w-sm rounded overflow-hidden shadow-lg p-2 cursor-pointer"
+              className="w-full rounded overflow-hidden shadow-lg p-2 cursor-pointer"
               onClick={() => handleNavigate(`/${location.id}`)}
             >
               {data && data.locationList.resources.length === 0 && (
@@ -106,6 +124,40 @@ const LeftSide: React.FC = () => {
               </div>
             </div>
           ))}
+        {locations.length > 0 && totalPages > 0 && (
+          <div className="flex justify-between my-4">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ${
+                currentPage === 1 ? '' : ' hover:bg-blue-700'
+              }`}
+            >
+              Previous
+            </button>
+            <select
+              value={limit}
+              onChange={(e) => {
+                handlePageChange(1)
+                setLimit(Number(e.target.value))
+              }}
+              className="mr-2 bg-white border border-gray-300 rounded px-2 py-1 w-1/2"
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+            </select>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`bg-blue-500 text-white font-bold py-2 px-4 rounded ${
+                currentPage === totalPages ? '' : ' hover:bg-blue-700 '
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </>
   )

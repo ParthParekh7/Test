@@ -17,11 +17,16 @@ export type LeftSideContainer = {
     data: any
     networkStatus: NetworkStatus
     error: ApolloError | undefined
+    currentPage: number
+    limit: number
+    totalPages: number
   }
   actions: {
     handleRefresh: () => void
     setSearch: (value: React.SetStateAction<string>) => void
     handleNavigate: (location: string) => void
+    handlePageChange: (page: number) => void
+    setLimit: (limit: number) => void
   }
 }
 
@@ -39,6 +44,9 @@ export const useLeftSideContainer = (): LeftSideContainer => {
   const [locations, setLocations] = useState<
     GetLocationsData['locationList']['resources']
   >([])
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [totalPages, setTotalPages] = useState<number>(0)
+  const [limit, setLimit] = useState<number>(10)
 
   useEffect(() => {
     ;(async () => {
@@ -46,18 +54,23 @@ export const useLeftSideContainer = (): LeftSideContainer => {
         await getLocation({
           variables: {
             tenant: tenant,
-            search: search
+            search: search,
+            page: currentPage,
+            limit: limit
           }
         })
       } catch (error) {
-        console.log('Error getting locations :', error)
+        console.error('Error getting locations:', error)
       }
     })()
-  }, [search])
+  }, [search, currentPage, limit])
 
   useEffect(() => {
     if (data) {
+      console.log('Data :>', data)
+
       setLocations(data.locationList.resources)
+      setTotalPages(data.locationList.pages)
     }
   }, [data])
 
@@ -69,6 +82,9 @@ export const useLeftSideContainer = (): LeftSideContainer => {
   const handleNavigate = (location: string) => {
     navigate(location)
   }
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
   return {
     state: {
@@ -78,12 +94,17 @@ export const useLeftSideContainer = (): LeftSideContainer => {
       networkStatus,
       pathname,
       error,
-      search
+      search,
+      currentPage,
+      limit,
+      totalPages
     },
     actions: {
       handleRefresh,
       setSearch,
-      handleNavigate
+      handleNavigate,
+      setLimit,
+      handlePageChange
     }
   }
 }
