@@ -6,7 +6,7 @@ export interface LocationPatchInput {
   name: string
   npi: string
   taxId: string
-  tenant: string
+
   type: string
 }
 
@@ -17,7 +17,7 @@ export interface LocationTelecomInput {
 
 export interface LocationPatchVariables {
   id: string | undefined
-  requestBody: LocationPatchInput
+  requestBody: Partial<LocationPatchInput>
   tenant: string
 }
 

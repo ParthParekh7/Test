@@ -6,7 +6,6 @@ export interface Location {
   name: string
   npi: string
   taxId: string
-  tenant: string
   type: string
 }
 

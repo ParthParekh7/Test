@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useQuery, gql, useMutation } from '@apollo/client'
+import { useMutation, NetworkStatus, useLazyQuery } from '@apollo/client'
 import { useNavigate } from 'react-router-dom'
 import {
   CreateLocationVariables,
@@ -15,21 +15,26 @@ const LeftSide: React.FC = () => {
   const [search, setSearch] = React.useState('')
   const navigate = useNavigate()
 
-  const { loading, error, data, refetch } = useQuery(GET_LOCATIONS, {
-    variables: {
-      tenant: tenant,
-      search: search
-    }
-  })
+  const [getLocation, { loading, error, data, refetch, networkStatus }] =
+    useLazyQuery(GET_LOCATIONS, { notifyOnNetworkStatusChange: true })
   const [locations, setLocations] = useState<Location[]>([])
-  const [createLocation, s] = useMutation<
-    LocationCreateResponse,
-    CreateLocationVariables
-  >(CREATE_LOCATION)
+  const [
+    createLocation,
+    { error: errorCreate, data: createData, loading: loadingCreate }
+  ] = useMutation<LocationCreateResponse, CreateLocationVariables>(
+    CREATE_LOCATION
+  )
 
   useEffect(() => {
-    refetch()
-  }, [search, refetch])
+    ;(async () => {
+      await getLocation({
+        variables: {
+          tenant: tenant,
+          search: search
+        }
+      })
+    })()
+  }, [search])
 
   useEffect(() => {
     if (data) {
@@ -52,7 +57,7 @@ const LeftSide: React.FC = () => {
   }
 
   const handleRefresh = () => {
-    refetch()
+    refetch({ tenant: tenant, search: '' })
     setRefresh((prev) => prev + 1)
   }
 
@@ -60,7 +65,6 @@ const LeftSide: React.FC = () => {
     navigate(location.id, { state: location.name })
   }
 
-  if (loading) return <p>Loading...</p>
   if (error) return <p>Error: {error.message}</p>
   return (
     <>
@@ -81,7 +85,7 @@ const LeftSide: React.FC = () => {
           <button
             type="button"
             onClick={handleCreateLocation}
-            className="my-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="my-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
           >
             Add
           </button>
@@ -119,7 +123,15 @@ const LeftSide: React.FC = () => {
           </div>
         </form>
 
-        {locations.length === 0 && <p className="my-2">No data found</p>}
+        {networkStatus === NetworkStatus.refetch && loading && (
+          <p className="my-2">Refetching!</p>
+        )}
+        {loading && networkStatus !== NetworkStatus.refetch && (
+          <p>Loading...</p>
+        )}
+        {!loading && locations.length === 0 && (
+          <p className="my-2">No data found</p>
+        )}
 
         {locations.length > 0 &&
           locations.map((location: any) => (

@@ -20,3 +20,11 @@ export const CREATE_LOCATION = gql`
     }
   }
 `
+
+export const LOCATION_REMOVE_MUTATION = gql`
+  mutation LocationRemove($locationRemoveId: String!, $tenant: String!) {
+    locationRemove(id: $locationRemoveId, tenant: $tenant) {
+      resourceID
+    }
+  }
+`

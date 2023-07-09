@@ -1,6 +1,6 @@
-import { ApolloError, gql, useMutation, useQuery } from '@apollo/client'
-import React, { useEffect, useMemo, useState } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { useLazyQuery, useMutation } from '@apollo/client'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { tenant } from '../../App'
 import {
@@ -13,14 +13,34 @@ import {
   LocationReadData,
   LocationReadVariables
 } from '../../types/locationRead/types'
-import { LOCATION_PATCH } from '../../GraphQL/mutation'
+import {
+  LOCATION_PATCH,
+  LOCATION_REMOVE_MUTATION
+} from '../../GraphQL/mutation'
 import { LOCATION_READ_QUERY } from '../../GraphQL/queries'
+import {
+  LocationRemoveData,
+  LocationRemoveVariables
+} from '../../types/locationDelete/types'
 
 const RightSide: React.FC = () => {
   const { id } = useParams()
-  const { state } = useLocation()
+  const [errorMsg, setErrorMsg] = useState<string>('')
+  const [successMsg, setSuccessMsg] = useState<string>('')
+  const initialValues: Location = {
+    id: '',
+    name: '',
+    address: '',
+    description: '',
+    alias: '',
+    npi: '',
+    taxId: '',
+    type: ''
+  }
 
-  const { register, setValue, watch } = useForm<LocationPatchInput>()
+  const { register, setValue } = useForm<LocationPatchInput>({
+    defaultValues: initialValues
+  })
   const [location, setLocation] = useState<Location | null>(null)
 
   const [patchLocation] = useMutation<
@@ -29,15 +49,35 @@ const RightSide: React.FC = () => {
   >(LOCATION_PATCH)
   const [showSuccessAlert, setShowSuccessAlert] = React.useState(false)
 
-  const { data, loading, error } = useQuery<
+  const [getLocationById, { data, loading, error }] = useLazyQuery<
     LocationReadData,
     LocationReadVariables
-  >(LOCATION_READ_QUERY, {
-    variables: {
-      locationReadId: id ?? '',
-      tenant: tenant
+  >(LOCATION_READ_QUERY, { fetchPolicy: 'no-cache' })
+  const [locationRemoveMutation] = useMutation<
+    LocationRemoveData,
+    LocationRemoveVariables
+  >(LOCATION_REMOVE_MUTATION)
+
+  useEffect(() => {
+    try {
+      setErrorMsg('')
+      if (id) {
+        ;(async () => {
+          const data = await getLocationById({
+            variables: {
+              locationReadId: id,
+              tenant: tenant
+            }
+          })
+          if (!data.data) {
+            setErrorMsg(`Location data not found for id : ${id}`)
+          }
+        })()
+      }
+    } catch (error) {
+      console.log('Get by location id error :', error)
     }
-  })
+  }, [id])
 
   const handleFieldChange = async (
     field: keyof LocationPatchInput,
@@ -45,21 +85,34 @@ const RightSide: React.FC = () => {
   ) => {
     if (location) {
       const fieldValue = location[field]
+
       if (fieldValue !== value) {
         try {
           await patchLocation({
             variables: {
               id,
               requestBody: {
-                ...location,
-                [field]: value,
-                tenant
+                [field]: value
               },
               tenant
             }
           })
 
-          setShowSuccessAlert(true)
+          if (id) {
+            const data = await getLocationById({
+              variables: {
+                locationReadId: id,
+                tenant: tenant
+              }
+            })
+            if (!data.data) {
+              setErrorMsg(`Location data not found for id : ${id}`)
+            }
+            setSuccessMsg('Location data updated successfully!')
+            setTimeout(() => {
+              setSuccessMsg('')
+            }, 3000)
+          }
         } catch (error) {
           console.error('Error:', error)
         }
@@ -67,31 +120,93 @@ const RightSide: React.FC = () => {
     }
   }
 
-  const handleDelete = () => {}
+  const handleDelete = async () => {
+    try {
+      if (id) {
+        const data = await locationRemoveMutation({
+          variables: {
+            locationRemoveId: id,
+            tenant: tenant
+          }
+        })
+        if (data.data?.locationRemove.resourceID === id) {
+          setSuccessMsg('Location data deleted successfully!')
+          setTimeout(() => {
+            setSuccessMsg('')
+          }, 3000)
+        }
+      }
+    } catch (error) {
+      console.log('Delete error :>', error)
+    }
+  }
 
+  //69ffa818-e8ca-4673-9f9a-5899d1e7a1d6
   useEffect(() => {
     if (data) {
-      setLocation(null)
+      if (data && data.locationRead && data.locationRead.resource) {
+        setLocation(data.locationRead.resource)
+
+        setValue('name', data.locationRead.resource.name)
+        setValue('address', data.locationRead.resource.address)
+        setValue('description', data.locationRead.resource.description)
+        setValue('alias', data.locationRead.resource.alias)
+        setValue('taxId', data.locationRead.resource.taxId)
+        setValue('type', data.locationRead.resource.type)
+        setValue('npi', data.locationRead.resource.npi)
+      }
     }
   }, [data])
+
+  const handleRefresh = async () => {
+    if (id) {
+      const data = await getLocationById({
+        variables: {
+          locationReadId: id,
+          tenant: tenant
+        }
+      })
+
+      if (!data.data) {
+        setErrorMsg(`Location data not found for id : ${id}`)
+      }
+    }
+  }
 
   return useMemo(() => {
     return (
       <div className="md:w-2/3 h-full relative">
         <div className="p-3 h-20 flex justify-between items-center bg-green-100">
-          <div>{state}</div>
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="my-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Delete
-          </button>
+          <div>
+            <span className="ml-3 font-bold text-lg">{location?.name}</span>
+          </div>
+          <div className="">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              className="my-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="ml-3 my-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
         </div>
         <form className="w-full p-3">
-          {showSuccessAlert && (
+          {!!successMsg && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-              Location patched successfully!
+              {successMsg}
+            </div>
+          )}
+
+          {!!errorMsg && (
+            <div className="bg-red-300 border border-red-400 text-black px-4 py-3 rounded mb-4">
+              {errorMsg}
             </div>
           )}
 
@@ -194,6 +309,14 @@ const RightSide: React.FC = () => {
         </form>
       </div>
     )
-  }, [id, showSuccessAlert])
+  }, [
+    id,
+    location?.name,
+    successMsg,
+    errorMsg,
+    handleFieldChange,
+    handleDelete,
+    handleRefresh
+  ])
 }
 export default RightSide
